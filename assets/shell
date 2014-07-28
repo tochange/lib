@@ -1,0 +1,10 @@
+mount -o remount rw /
+mount -o remount rw /system
+mount -o remount rw /data
+
+cd /
+ln -s /system/bin bin
+mkdir /var
+mkdir /var/run
+mkdir /tmp
+exit
