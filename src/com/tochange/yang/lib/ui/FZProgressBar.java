@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.tochange.yang.lib;
+package com.tochange.yang.lib.ui;
 
 import android.content.Context;
 import android.graphics.Color;

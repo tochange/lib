@@ -4,55 +4,32 @@ import static android.view.Gravity.BOTTOM;
 import static com.tochange.yang.lib.toast.AppMsg.LENGTH_SHORT;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TimerTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.ActivityManager.RunningTaskInfo;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.pm.ResolveInfo;
-import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.CompressFormat;
-import android.graphics.Bitmap.Config;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PixelFormat;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
-import android.graphics.RectF;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Vibrator;
-import android.util.Base64;
-import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -65,83 +42,24 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.devspark.appmsg.R;
-import com.tochange.yang.lib.FZProgressBar.Mode;
 import com.tochange.yang.lib.toast.AppMsg;
+import com.tochange.yang.lib.ui.FZProgressBar;
+import com.tochange.yang.lib.ui.FZProgressBar.Mode;
 
 public class Utils
 {
     static Context mContext;
+
     public static void setContext(Context c)
     {
         mContext = c;
     }
-    
-    public static void showHardwareInfoLog(Context context) {
-		WindowManager windowManager = (WindowManager) context
-				.getSystemService(Context.WINDOW_SERVICE);
-		DisplayMetrics m = new DisplayMetrics();
-		windowManager.getDefaultDisplay().getMetrics(m);
-		float d = m.density;
-		int dd = m.densityDpi;
-		log.e("density:" + d + ";densityDpi:" + dd + ";screenSize:" + m.widthPixels
-				+ "*" + m.heightPixels + ";MANUFACTURER:"
-				+ Build.MANUFACTURER + ";BRAND:" + Build.BRAND
-				+ ";MODEL:" + Build.MODEL + ";RELEASE:"
-				+ Build.VERSION.RELEASE + ";SDK:" + Build.VERSION.SDK);
-	}
-    /** 
-     * 根据手机的分辨率从 dp 的单位 转成为 px(像素) 
-     */  
-    public static int dip2px(Context context, float dpValue) {  
-        final float scale = context.getResources().getDisplayMetrics().density;  
-        return (int) (dpValue * scale + 0.5f);  
-    }  
-  
-    /** 
-     * 根据手机的分辨率从 px(像素) 的单位 转成为 dp 
-     */  
-    public static int px2dip(Context context, float pxValue) {  
-        final float scale = context.getResources().getDisplayMetrics().density;  
-        return (int) (pxValue / scale + 0.5f);  
-    }
-    public static boolean copyAssetsToFiles(Context context, String filaName)
-    {
-        if (!(new File(context.getFilesDir() + File.separator + filaName))
-                .exists())
-        {
-            try
-            {
-                InputStream inputStream = context.getAssets().open(filaName);
-                int length = inputStream.available();
-                byte[] buffer = new byte[length];
-                inputStream.read(buffer);
-                inputStream.close();
-                FileOutputStream fileOutputStream = context.openFileOutput(
-                        filaName, Context.MODE_PRIVATE);
-                fileOutputStream.write(buffer);
-                fileOutputStream.close();
-                return true;
-            }
-            catch (FileNotFoundException e)
-            {
-                log.e(e.toString());
-                return false;
-            }
-            catch (IOException e)
-            {
-                log.e(e.toString());
-                return false;
-            }
 
-        }
-        else
-            return true;
-    }
-    static class FileInfos
+    public static class FileInfos
     {
         Calendar c;
 
-        File file;
+        public File file;
 
         public FileInfos(Calendar c, File file)
         {
@@ -158,6 +76,28 @@ public class Utils
         }
     }
 
+    /**
+     * 自定义正则格式匹配，返回是否匹配该正则表达式
+     */
+    public static boolean matchPattern(String str, String pattStr)
+    {
+        boolean res = false;
+        Pattern pattern = Pattern.compile(pattStr, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(str);
+        if (matcher.matches())
+        {
+            res = true;
+        }
+        return res;
+    }
+
+    /**
+     * delete old file，only left 10
+     * 
+     * @param path
+     * @param appName
+     * @return
+     */
     public static List<FileInfos> getDeletedFiles(String path, String appName)
     {
         ArrayList<FileInfos> ret = new ArrayList<FileInfos>();
@@ -182,8 +122,8 @@ public class Utils
     public static void vibrate(Context c)
     {
 
-        Vibrator  mVibrator = (Vibrator) c.getApplicationContext().getSystemService(
-                Service.VIBRATOR_SERVICE);
+        Vibrator mVibrator = (Vibrator) c.getApplicationContext()
+                .getSystemService(Service.VIBRATOR_SERVICE);
         mVibrator.vibrate(new long[] { 50, 50, 0, 0 }, -1);
     }
 
@@ -213,31 +153,6 @@ public class Utils
         }
     }
 
-    public static void getFileStat(String path)
-    {
-        try
-        {
-            Process p = Runtime.getRuntime().exec("stat " + path);
-            p.waitFor();
-            BufferedReader bf = new BufferedReader(new InputStreamReader(
-                    p.getInputStream()));
-            String line = bf.readLine();
-            while (line != null)
-            {
-                line = bf.readLine();
-                log.e("stat:" + line);
-            }
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-    }
-
     public static void sleep(int millisecond)
     {
         try
@@ -248,6 +163,30 @@ public class Utils
         {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 判断APP是在后台执行或是在前台执行
+     */
+    public static boolean isAppOnForeground(Context context)
+    {
+        ActivityManager activityManager = (ActivityManager) context
+                .getSystemService(Context.ACTIVITY_SERVICE);
+        List<RunningAppProcessInfo> appProcesses = activityManager
+                .getRunningAppProcesses();
+        if (appProcesses == null)
+        {
+            return false;
+        }
+        for (RunningAppProcessInfo appProcess : appProcesses)
+        {
+            if (appProcess.processName.equals(context.getPackageName())
+                    && appProcess.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static Intent getViewIntent(File file)
@@ -341,89 +280,6 @@ public class Utils
 
     }
 
-    public static String getCurTimeToString(int i, int n)
-    {
-        Calendar c = Calendar.getInstance();
-        if (c == null)
-            return null;
-        String time;
-        String s1 = "-", s2 = ":", s3 = " ";
-        c.add(Calendar.DATE, n);
-        int mYear = c.get(Calendar.YEAR);
-        int mMonth = c.get(Calendar.MONTH);
-        int mDay = c.get(Calendar.DAY_OF_MONTH);
-        int mHour = c.get(Calendar.HOUR_OF_DAY);
-        int mMinute = c.get(Calendar.MINUTE);
-        int mSecond = c.get(Calendar.SECOND);
-
-        time = "" + mYear;
-        if (1 == i)
-        {
-            time += s1;
-        }
-        int mon = mMonth + 1;
-        if (mon < 10)
-        {
-            time = time + 0 + mon;
-        }
-        else
-        {
-            time += mon;
-        }
-        if (1 == i)
-        {
-            time += s1;
-        }
-        if (mDay < 10)
-        {
-            time = time + 0 + mDay;
-        }
-        else
-        {
-            time += mDay;
-        }
-        if (1 == i)
-        {
-            time += s3;
-        }
-        if (mHour < 10)
-        {
-            time = time + 0 + mHour;
-        }
-        else
-        {
-            time += mHour;
-        }
-        if (1 == i)
-        {
-            time += s2;
-        }
-        if (mMinute < 10)
-        {
-            time = time + 0 + mMinute;
-        }
-        else
-        {
-            time += mMinute;
-        }
-        if (1 == i)
-        {
-            time += s2;
-        }
-        if (mSecond < 10)
-        {
-            time = time + 0 + mSecond;
-        }
-        else
-        {
-            time += mSecond;
-        }
-
-        time = time.replace(" ", "_").replace(":", ".");
-        time = "_" + time;
-        return time;
-    }
-
     public static boolean serviceIsRunning(Context mContext, String className)
     {
 
@@ -494,452 +350,7 @@ public class Utils
                 .getProcessMemoryInfo(new int[] { pid });
         return memoryInfoArray[0].getTotalPrivateDirty();
     }
-
-    public static void uninstallApp(Context cc, String packageName)
-    {
-        Uri packageURI = Uri.parse("package:" + packageName);
-        Intent uninstallIntent = new Intent(Intent.ACTION_DELETE, packageURI);
-        cc.startActivity(uninstallIntent);
-        // setIntentAndFinish(true, true);
-    }
-
-    public static void forceStopApp(Context cc, String packageName)
-    {
-        ActivityManager am = (ActivityManager) cc
-                .getSystemService(Context.ACTIVITY_SERVICE);
-        // am.forceStopPackage(packageName);
-
-        // Class c =
-        // Class.forName("com.android.settings.applications.ApplicationsState");
-        // Method m = c.getDeclaredMethod("getInstance", Application.class);
-
-    }
-
-    public static int getStatusBarHeight(Context cc)
-    {
-        int ret = -1;
-        try
-        {
-            Class<?> c = Class.forName("com.android.internal.R$dimen");
-            Object o = c.newInstance();
-            Field field = c.getField("status_bar_height");
-            int x = (Integer) field.get(o);
-            ret = cc.getResources().getDimensionPixelSize(x);
-        }
-        catch (Exception e)
-        {
-            log.e("getStatusBarHeight error");
-            e.printStackTrace();
-        }
-        return ret;
-    }
-
-    public static void openApp(Context c, String packageName)
-    {
-        Intent i = c.getPackageManager().getLaunchIntentForPackage(packageName);
-        if (i != null)
-            c.startActivity(i);
-        else
-            Toast.makeText(c, "cann't launcher this app", Toast.LENGTH_SHORT)
-                    .show();
-
-    }
-
-    public static void openAppTroublesome(Context c, String packageName)
-
-    {
-        PackageInfo pi;
-        try
-        {
-            pi = c.getPackageManager().getPackageInfo(packageName, 0);
-            Intent resolveIntent = new Intent(Intent.ACTION_MAIN, null);
-            resolveIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-            resolveIntent.setPackage(pi.packageName);
-            List<ResolveInfo> apps = c.getPackageManager()
-                    .queryIntentActivities(resolveIntent, 0);
-
-            ResolveInfo ri = apps.iterator().next();
-            if (ri != null)
-            {
-                String packageName1 = ri.activityInfo.packageName;
-                String className = ri.activityInfo.name;
-
-                Intent intent = new Intent(Intent.ACTION_MAIN);
-                intent.addCategory(Intent.CATEGORY_LAUNCHER);
-
-                ComponentName cn = new ComponentName(packageName1, className);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.setComponent(cn);
-                c.startActivity(intent);
-            }
-        }
-        catch (NameNotFoundException e)
-        {
-            log.e("open app error,maybe cann't find the launcher activity");
-            e.printStackTrace();
-        }
-
-    }
-
-    public static double[] getPhysicInch(Context context)
-    {
-        DisplayMetrics dm = new DisplayMetrics();
-        ((Activity) context).getWindowManager().getDefaultDisplay()
-                .getMetrics(dm);
-        double result[] = new double[3];
-        result[0] = Math.pow(dm.widthPixels / dm.xdpi, 2);
-        result[1] = Math.pow(dm.heightPixels / dm.ydpi, 2);
-        result[2] = Math.sqrt(result[0] + result[1]);
-        return result;
-    }
-
-    public static boolean bitmapToPNGFile(Bitmap b, String fileName)
-    {
-        if (b == null)
-            return false;
-        try
-        {
-            FileOutputStream out = new FileOutputStream(fileName);
-            b.compress(Bitmap.CompressFormat.PNG, 100, out);
-            out.flush();
-            out.close();
-        }
-        catch (FileNotFoundException e)
-        {
-            log.e(e.toString());
-        }
-        catch (IOException e)
-        {
-            log.e(e.toString());
-        }
-        return true;
-    }
-    
-    public static Bitmap getBitmapFromView(View view) {  
-        Bitmap bitmap = null;  
-        try {  
-            int width = view.getWidth();  
-            int height = view.getHeight();  
-            if(width != 0 && height != 0){  
-                bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);  
-                Canvas canvas = new Canvas(bitmap);  
-                view.layout(0, 0, width, height);  
-                view.draw(canvas);  
-            }  
-        } catch (Exception e) {  
-            bitmap = null;  
-            e.getStackTrace();  
-        }  
-        return bitmap;  
-    }
-    
-    //add water mark in right|bottom
-    public static Bitmap addWatermark(Bitmap src, Bitmap watermark) {  
-        if (src == null || watermark  == null) {  
-            log.e("src is null");  
-            return src;  
-        }  
-          
-        int sWid = src.getWidth();  
-        int sHei = src.getHeight();  
-        int wWid = watermark.getWidth();  
-        int wHei = watermark.getHeight();  
-        if (sWid == 0 || sHei == 0) {  
-            return null;  
-        }  
-          
-        if (sWid < wWid || sHei < wHei) {  
-            return src;  
-        }  
-          
-        Bitmap bitmap = Bitmap.createBitmap(sWid, sHei, Config.ARGB_8888);  
-        try {  
-            Canvas cv = new Canvas(bitmap);  
-            cv.drawBitmap(src, 0, 0, null);  
-            cv.drawBitmap(watermark, sWid - wWid - 5, sHei - wHei - 5, null);  
-            cv.save(Canvas.ALL_SAVE_FLAG);  
-            cv.restore();  
-        } catch (Exception e) {  
-            bitmap = null;  
-            e.getStackTrace();  
-        }  
-        return bitmap;  
-    }  
-    
-    
-    public static Bitmap addDeletemark(Bitmap src, Bitmap watermark) {  
-        if (src == null || watermark  == null) {  
-            log.e("src is null");  
-            return src;  
-        }  
-          
-        int sWid = src.getWidth();  
-        int sHei = src.getHeight();  
-        int wWid = watermark.getWidth();  
-        int wHei = watermark.getHeight();  
-        if (sWid == 0 || sHei == 0) {  
-            return null;  
-        }  
-          
-        if (sWid < wWid || sHei < wHei) {  
-            return src;  
-        }  
-          
-        Bitmap bitmap = Bitmap.createBitmap(sWid + wWid / 2, sHei + wHei / 2, Config.ARGB_8888);  
-        try {  
-            Canvas cv = new Canvas(bitmap);  
-            cv.drawBitmap(src, 0, wHei / 2, null);  
-            cv.drawBitmap(watermark, sWid - wWid / 2, 0, null);  
-            cv.save(Canvas.ALL_SAVE_FLAG);  
-            cv.restore();  
-        } catch (Exception e) {  
-            bitmap = null;  
-            e.getStackTrace();  
-        }  
-        return bitmap;  
-    } 
-    
-    public static boolean saveBitmap(Bitmap bitmap,String path, String fileName) {  
-        File file = new File(path);  
-        if (!file.exists()) {  
-            file.mkdir();  
-        }  
-        File imageFile = new File(file, fileName);  
-        try {  
-            imageFile.createNewFile();  
-            FileOutputStream fos = new FileOutputStream(imageFile);  
-            bitmap.compress(CompressFormat.JPEG, 50, fos);  
-            fos.flush();  
-            fos.close();  
-        } catch (FileNotFoundException e) {  
-            e.printStackTrace();  
-        } catch (IOException e) {  
-            e.printStackTrace();  
-        }  
-        return true;  
-    } 
-    
-    public static synchronized String drawableToByte(Drawable drawable)
-    {
-
-        if (drawable != null)
-        {
-            Bitmap bitmap = Bitmap
-                    .createBitmap(
-                            drawable.getIntrinsicWidth(),
-                            drawable.getIntrinsicHeight(),
-                            drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888
-                                    : Bitmap.Config.RGB_565);
-            Canvas canvas = new Canvas(bitmap);
-            drawable.setBounds(0, 0, drawable.getIntrinsicWidth(),
-                    drawable.getIntrinsicHeight());
-            drawable.draw(canvas);
-            int size = bitmap.getWidth() * bitmap.getHeight() * 4;
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream(size);
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-            byte[] imagedata = baos.toByteArray();
-            String icon = Base64.encodeToString(imagedata, Base64.DEFAULT);
-            return icon;
-        }
-        return null;
-    }
-
-    public static synchronized Drawable byteToDrawable(String icon)
-    {
-        if (icon == null || icon.equals(""))
-        {
-            log.e("image string null");
-            return null;
-        }
-        byte[] img = Base64.decode(icon.getBytes(), Base64.DEFAULT);
-        Bitmap bitmap;
-        if (img != null)
-        {
-
-            bitmap = BitmapFactory.decodeByteArray(img, 0, img.length);
-            @SuppressWarnings("deprecation")
-            Drawable drawable = new BitmapDrawable(bitmap);
-
-            return drawable;
-        }
-        return null;
-
-    }
-
-    public static Bitmap getBitmapFromResources(Activity activity, int resId)
-    {
-        return BitmapFactory.decodeResource(activity.getResources(), resId);
-    }
-
-    public static Bitmap convertBytes2Bimap(byte[] b)
-    {
-        if (b.length == 0)
-        {
-            return null;
-        }
-        return BitmapFactory.decodeByteArray(b, 0, b.length);
-    }
-
-    public static byte[] convertBitmap2Bytes(Bitmap bm)
-    {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bm.compress(Bitmap.CompressFormat.PNG, 100, baos);
-        return baos.toByteArray();
-    }
-
-    public static Bitmap string2Bitmap(String s)
-    {
-        Bitmap b;
-        byte[] array = Base64.decode(s, Base64.DEFAULT);
-        b = BitmapFactory.decodeByteArray(array, 0, array.length);
-        return b;
-    }
-
-    public static Bitmap convertDrawable2BitmapSimple(Drawable drawable)
-    {
-        BitmapDrawable bd = (BitmapDrawable) drawable;
-        return bd.getBitmap();
-    }
-
-    public static Drawable convertBitmap2Drawable(Bitmap bitmap)
-    {
-        BitmapDrawable bd = new BitmapDrawable(bitmap);
-        return bd;
-    }
-
-    public static Bitmap drawabletoBitmap(Drawable drawable)
-    {
-
-        int width = drawable.getIntrinsicWidth();
-        int height = drawable.getIntrinsicWidth();
-
-        Bitmap bitmap = Bitmap.createBitmap(width, height, drawable
-                .getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888
-                : Bitmap.Config.RGB_565);
-        Canvas canvas = new Canvas(bitmap);
-        drawable.setBounds(0, 0, width, height);
-
-        drawable.draw(canvas);
-
-        return bitmap;
-    }
-
-    public static Bitmap getRCB(Bitmap bitmap, float roundPX)
-    {
-        Bitmap dstbmp = Bitmap.createBitmap(bitmap.getWidth(),
-                bitmap.getHeight(), Config.ARGB_8888);
-        Canvas canvas = new Canvas(dstbmp);
-
-        final int color = 0xff424242;
-        final Paint paint = new Paint();
-        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-        final RectF rectF = new RectF(rect);
-        paint.setAntiAlias(true);
-        canvas.drawARGB(0, 0, 0, 0);
-        paint.setColor(color);
-        canvas.drawRoundRect(rectF, roundPX, roundPX, paint);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        canvas.drawBitmap(bitmap, rect, rect, paint);
-        return dstbmp;
-    }
-
-    public static Bitmap getOval(Bitmap bitmap)
-    {
-        Bitmap dstbmp = Bitmap.createBitmap(bitmap.getWidth(),
-                bitmap.getHeight(), Config.ARGB_8888);
-        Canvas canvas = new Canvas(dstbmp);
-        final int color = 0xff00ff00;
-        final Paint paint = new Paint();
-        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-        final RectF rectF = new RectF(rect);
-        paint.setAntiAlias(true);
-        canvas.drawARGB(0, 255, 0, 0);
-        paint.setColor(color);
-        canvas.drawOval(rectF, paint);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        canvas.drawBitmap(bitmap, rect, rect, paint);
-        return dstbmp;
-    }
-
-    public static Bitmap getPathBitmap(Bitmap bitmap, Path path)
-    {
-        Bitmap dstbmp = Bitmap.createBitmap(bitmap.getWidth(),
-                bitmap.getHeight(), Config.ARGB_8888);
-        Canvas canvas = new Canvas(dstbmp);
-        final int color = 0xff00ff00;
-        final Paint paint = new Paint();
-        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-        paint.setAntiAlias(true);
-        canvas.drawARGB(0, 255, 0, 0);
-        paint.setColor(color);
-        canvas.drawPath(path, paint);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        canvas.drawBitmap(bitmap, rect, rect, paint);
-        return dstbmp;
-    }
-
-    public static Bitmap getTransparentOval(Bitmap bitmap)
-    {
-        Bitmap dstbmp = Bitmap.createBitmap(bitmap.getWidth(),
-                bitmap.getHeight(), Config.ARGB_8888);
-        Canvas canvas = new Canvas(dstbmp);
-        final int color = 0x9900ff00;
-        final Paint paint = new Paint();
-        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-        final RectF rectF = new RectF(rect);
-        paint.setAntiAlias(true);
-        canvas.drawARGB(0, 255, 0, 0);
-        paint.setColor(color);
-        canvas.drawOval(rectF, paint);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        canvas.drawBitmap(bitmap, rect, rect, paint);
-        return dstbmp;
-    }
-    
-    /** 
-     * Checks if the device is a tablet or a phone 
-     *  
-     * @param activityContext 
-     *            The Activity Context. 
-     * @return Returns true if the device is a Tablet 
-     */  
-    public static boolean isTabletDevice(Context activityContext) {  
-        // Verifies if the Generalized Size of the device is XLARGE to be  
-        // considered a Tablet  
-        
-//        yangxj@20140722
-//        boolean xlarge = ((activityContext.getResources().getConfiguration().screenLayout &   
-//                            Configuration.SCREENLAYOUT_SIZE_MASK) ==   
-//                            Configuration.SCREENLAYOUT_SIZE_XLARGE);  
-        boolean xlarge = ((activityContext.getResources().getConfiguration().screenLayout &   
-                Configuration.SCREENLAYOUT_SIZE_MASK) >=   
-                Configuration.SCREENLAYOUT_SIZE_LARGE); 
-        
-        // If XLarge, checks if the Generalized Density is at least MDPI  
-        // (160dpi)  
-        if (xlarge) { 
-            DisplayMetrics metrics = new DisplayMetrics();  
-            Activity activity = (Activity) activityContext;  
-            activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);  
-      
-            // MDPI=160, DEFAULT=160, DENSITY_HIGH=240, DENSITY_MEDIUM=160,  
-            // DENSITY_TV=213, DENSITY_XHIGH=320  
-            if (metrics.densityDpi == DisplayMetrics.DENSITY_DEFAULT  
-                    || metrics.densityDpi == DisplayMetrics.DENSITY_HIGH  
-                    || metrics.densityDpi == DisplayMetrics.DENSITY_MEDIUM  
-                    || metrics.densityDpi == DisplayMetrics.DENSITY_TV  
-                    || metrics.densityDpi == DisplayMetrics.DENSITY_XHIGH) {  
-      
-                // Yes, this is a tablet!  
-                return true;  
-            }  
-        }  
-      
-        // No, this is not a tablet!  
-        return false;  
-    }  
-
+   
     public void setUpFloatWindow(String message)
     {
         LinearLayout tv = (LinearLayout) LayoutInflater.from(
@@ -1025,10 +436,11 @@ public class Utils
             });
         }
     }
-//    timer = new Timer();
-//    timer.scheduleAtFixedRate(new RefreshTask(), 0, 500);
-//    timer.cancel();
-    
+
+    // timer = new Timer();
+    // timer.scheduleAtFixedRate(new RefreshTask(), 0, 500);
+    // timer.cancel();
+
     class SleepTask extends AsyncTask<String, Integer, String>
     {
 

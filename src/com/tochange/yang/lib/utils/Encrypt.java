@@ -1,4 +1,4 @@
-package com.tochange.yang.lib;
+package com.tochange.yang.lib.utils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -8,6 +8,8 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+
+import com.tochange.yang.lib.log;
 
 import android.content.Context;
 import android.database.Cursor;

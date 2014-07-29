@@ -1,4 +1,4 @@
-package com.tochange.yang.lib;
+package com.tochange.yang.lib.utils;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.tochange.yang.lib.Utils;
+import com.tochange.yang.lib.log;
 import com.tochange.yang.lib.Utils.FileInfos;
 
 import android.content.Context;
@@ -97,7 +99,7 @@ public class SimpleLogFile
         }
         // create log file
 
-        String logFileName = appName + Utils.getCurTimeToString(1, 0) + ".log";
+        String logFileName = appName + TimeFormatHelper.getCurTimeToString(1, 0) + ".log";
         File flog = new File(LOGPATH + "/" + logFileName);
         // start write log file
         String param = logCmd + " -p > " + flog.toString();
